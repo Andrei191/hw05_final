@@ -140,7 +140,7 @@ def follow_index(request):
 
 @login_required
 def profile_follow(request, username):
-    author =  get_object_or_404(User, username=username)
+    author = get_object_or_404(User, username=username)
     authors = [follower.author for follower in request.user.follower.all()]
     # Подписаться на автора
     if request.user != author and author not in authors:
