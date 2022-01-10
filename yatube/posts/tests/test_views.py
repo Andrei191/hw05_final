@@ -254,38 +254,59 @@ class PostPagesTests(TestCase):
 
     def test_authorized_client_can_subscribe(self):
         # проверка, что авторизованный пользователь может подписаться
+        count_before_follow = Follow.objects.filter(
+            author=PostPagesTests.second_user.id).count()
         self.authorized_client_1.get(
             reverse('posts:profile_follow',
                     args=(PostPagesTests.second_user.username, )))
         follow = Follow.objects.get(author=PostPagesTests.second_user.id)
         self.assertEqual(follow.user, PostPagesTests.first_user)
+        count_after_follow = Follow.objects.filter(
+            author=PostPagesTests.second_user.id).count()
+        self.assertEqual(count_after_follow, count_before_follow + 1)
 
     def test_authorized_client_see_authors_posts(self):
         """ проверка, что у пользователя отоброжаются
         посты автора, на которого он подписан """
-        self.authorized_client_1.get(
-            reverse('posts:profile_follow',
-                    args=(PostPagesTests.second_user.username, )))
+        # создание подписки
+        Follow.objects.create(
+            user=PostPagesTests.first_user,
+            author=PostPagesTests.second_user
+        )
+        # создаем пост
+        post = Post.objects.create(
+            text='tututu',
+            author=PostPagesTests.second_user
+        )
+        # проверяем, что пост отображается в подписках
         response = self.authorized_client_1.get(reverse('posts:follow_index'))
+        self.assertIn(post, response.context['page_obj'])
         authors = [post.author for post in response.context['page_obj']]
         self.assertIn(PostPagesTests.second_user, authors)
+        # проверяем, что пост не отображается у неподписчика
+        response = self.authorized_client_2.get(reverse('posts:follow_index'))
+        self.assertNotIn(post, response.context['page_obj'])
 
     def test_authorized_client_can_unsubscribe(self):
         """ проверка, что авторизованный пользователь может отписаться """
-        self.authorized_client_1.get(
-            reverse('posts:profile_follow',
-                    args=(PostPagesTests.second_user.username, )))
-        # проверяем, есть ли в таблице Follow запись с нужными полями
-        follow = Follow.objects.get(author=PostPagesTests.second_user.id)
-        self.assertEqual(follow.user, PostPagesTests.first_user)
+        Follow.objects.create(
+            user=PostPagesTests.first_user,
+            author=PostPagesTests.second_user
+        )
+        # создаем пост
+        post = Post.objects.create(
+            text='tututu',
+            author=PostPagesTests.second_user
+        )
+        response = self.authorized_client_1.get(reverse('posts:follow_index'))
+        self.assertIn(post, response.context['page_obj'])
         # отписка от автора
         self.authorized_client_1.get(
             reverse('posts:profile_unfollow',
                     args=(PostPagesTests.second_user.username, )))
-        # запрос к таблице Follow с автором, от кот отписались
-        follow = Follow.objects.filter(author=PostPagesTests.second_user.id)
-        # проверяем, что таких записей нет
-        self.assertEqual(len(follow), 0)
+        # проверка, что поста нет в подписках
+        response = self.authorized_client_1.get(reverse('posts:follow_index'))
+        self.assertNotIn(post, response.context['page_obj'])
 
 
 # Класс для тестирования паджинатора страниц со спиcками постов

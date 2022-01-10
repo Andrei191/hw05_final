@@ -47,8 +47,9 @@ def profile(request, username):
     page_obj = paginator_func(request, posts, PAGE_COUNT)
     following = False
     if not follow_user.is_anonymous:
-        authors = [follower.author for follower in follow_user.follower.all()]
-        following = author in authors
+        follow = Follow.objects.filter(author=author)
+        if follow.filter(user=follow_user).exists():
+            following = True
     context = {
         'posts': posts,
         'count': count,
@@ -127,9 +128,7 @@ def add_comment(request, post_id):
 @login_required
 def follow_index(request):
     # информация о текущем пользователе доступна в переменной request.user
-    # ...
-    authors = [follower.author for follower in request.user.follower.all()]
-    post_list = Post.objects.filter(author__in=authors)
+    post_list = Post.objects.filter(author__following__user=request.user)
     page_obj = paginator_func(request, post_list, PAGE_COUNT)
     # Отдаем в словаре контекста
     context = {
@@ -141,12 +140,13 @@ def follow_index(request):
 @login_required
 def profile_follow(request, username):
     author = get_object_or_404(User, username=username)
-    authors = [follower.author for follower in request.user.follower.all()]
+    follow = Follow.objects.filter(
+        author=author).filter(user=request.user).exists()
     # Подписаться на автора
-    if request.user != author and author not in authors:
+    if request.user != author and not follow:
         Follow.objects.create(
             user=request.user,
-            author=User.objects.filter(username=username)[0]
+            author=author
         )
     return redirect('posts:profile', username=username)
 
@@ -154,6 +154,6 @@ def profile_follow(request, username):
 @login_required
 def profile_unfollow(request, username):
     # Дизлайк, отписка
-    author = User.objects.get(username=username)
+    author = get_object_or_404(User, username=username)
     Follow.objects.filter(author=author.id).delete()
     return redirect('posts:profile', username=username)
