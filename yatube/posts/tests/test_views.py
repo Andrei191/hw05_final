@@ -283,9 +283,13 @@ class PostPagesTests(TestCase):
         self.assertIn(post, response.context['page_obj'])
         authors = [post.author for post in response.context['page_obj']]
         self.assertIn(PostPagesTests.second_user, authors)
-        # создаем еще один пост
+
+    def nonfollow_client_cant_see_post_in_follow_page(self):
+        """ проверка, что у пользователя не отображаются
+        посты автора, на которого он не подписан """
+        # создаем пост
         post = Post.objects.create(
-            text='lalala',
+            text='tututu',
             author=PostPagesTests.second_user
         )
         # проверяем, что пост не отображается у неподписчика
