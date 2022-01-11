@@ -283,6 +283,11 @@ class PostPagesTests(TestCase):
         self.assertIn(post, response.context['page_obj'])
         authors = [post.author for post in response.context['page_obj']]
         self.assertIn(PostPagesTests.second_user, authors)
+        # создаем еще один пост
+        post = Post.objects.create(
+            text='lalala',
+            author=PostPagesTests.second_user
+        )
         # проверяем, что пост не отображается у неподписчика
         response = self.authorized_client_2.get(reverse('posts:follow_index'))
         self.assertNotIn(post, response.context['page_obj'])
