@@ -52,4 +52,4 @@ python manage.py runserver
 Для подтверждения регистрации и сброса пароля используйте папку sent_emails
 
 Автор:
-<a href="https://github.com/Andrei191"> [Карасев Андрей] </a>.
+<a href="https://github.com/Andrei191"> Карасев Андрей </a>.
